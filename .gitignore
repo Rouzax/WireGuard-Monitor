@@ -1,0 +1,7 @@
+# Runtime files
+WireGuard-Monitor.log
+WireGuard-Monitor.cooldown
+WireGuard-Monitor.stopped-services.json
+
+# User configuration (contains user-specific settings)
+WireGuard-Monitor.config.json
