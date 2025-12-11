@@ -11,6 +11,7 @@ A PowerShell script that monitors WireGuard tunnel connectivity on Windows and a
 - Service management with dependency awareness (stops services when VPN is down, starts them when restored)
 - External JSON configuration file (preserved across script updates)
 - Cooldown mechanism to prevent rapid reconnection loops
+- Automatic log rotation with configurable size and backup count
 - Detailed logging for troubleshooting
 - Always maintains an active tunnel connection
 
@@ -53,7 +54,9 @@ Edit `WireGuard-Monitor.config.json`:
   "CooldownMinutes": 5,
   "PingTimeoutSeconds": 5,
   "WireGuardConfigPath": "C:\\Program Files\\WireGuard\\Data\\Configurations",
-  "ServicesToManage": ["qBittorrent", "NZBGet", "Prowlarr", "Radarr", "Medusa"]
+  "ServicesToManage": ["qBittorrent", "NZBGet", "Prowlarr", "Radarr", "Medusa"],
+  "LogMaxSizeKB": 512,
+  "LogBackupCount": 2
 }
 ```
 
@@ -67,6 +70,8 @@ Edit `WireGuard-Monitor.config.json`:
 | `PingTimeoutSeconds` | Timeout for each ping attempt. |
 | `WireGuardConfigPath` | Path to WireGuard's encrypted config files. |
 | `ServicesToManage` | Array of Windows service names to stop when VPN is down and start when restored. Set to empty array `[]` to disable service management. |
+| `LogMaxSizeKB` | Maximum log file size in KB before rotation. |
+| `LogBackupCount` | Number of backup log files to keep (e.g., `.log.1`, `.log.2`). |
 
 ### Service Management
 
@@ -199,6 +204,7 @@ The script creates several files in the same directory:
 |------|-------------|
 | `WireGuard-Monitor.config.json` | Configuration file (user-editable) |
 | `WireGuard-Monitor.log` | Detailed log of all actions and connectivity checks |
+| `WireGuard-Monitor.log.1`, `.2` | Rotated backup log files |
 | `WireGuard-Monitor.cooldown` | Timestamp file to track cooldown period |
 | `WireGuard-Monitor.stopped-services.json` | Tracks which services were stopped (for recovery) |
 

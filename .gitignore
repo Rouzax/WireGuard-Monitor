@@ -1,5 +1,6 @@
 # Runtime files
 WireGuard-Monitor.log
+WireGuard-Monitor.log.*
 WireGuard-Monitor.cooldown
 WireGuard-Monitor.stopped-services.json
 

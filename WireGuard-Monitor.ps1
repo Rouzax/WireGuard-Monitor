@@ -17,8 +17,8 @@
     Creates or updates the config file with default values, preserving existing settings.
 
 .NOTES
-    Author: Rouzax
-    Version: 1.0
+    Author: Martijn
+    Version: 2.0
     Requires: Administrator privileges (for WireGuard and service management)
 #>
 
@@ -61,6 +61,10 @@ $DefaultConfig = @{
     
     # Services to stop when VPN is down (will respect Windows service dependencies)
     ServicesToManage = @('qBittorrent', 'NZBGet', 'Prowlarr', 'Radarr', 'Medusa')
+    
+    # Log rotation settings
+    LogMaxSizeKB   = 512
+    LogBackupCount = 2
 }
 
 # ============================================================================
@@ -181,6 +185,49 @@ function Write-Log {
         'SUCCESS' { Write-Verbose $logEntry -Verbose }
         default   { Write-Verbose $logEntry }
     }
+}
+
+function Invoke-LogRotation {
+    <#
+    .SYNOPSIS
+        Rotates log file if it exceeds the configured maximum size.
+    #>
+    [CmdletBinding()]
+    param()
+    
+    if (-not (Test-Path $LogFile)) {
+        return
+    }
+    
+    $logSize = (Get-Item $LogFile).Length / 1KB
+    $maxSize = $Config.LogMaxSizeKB
+    $backupCount = $Config.LogBackupCount
+    
+    if ($logSize -lt $maxSize) {
+        return
+    }
+    
+    # Rotate existing backups (oldest first)
+    for ($i = $backupCount; $i -ge 1; $i--) {
+        $currentBackup = "$LogFile.$i"
+        
+        if ($i -eq $backupCount) {
+            # Delete oldest backup
+            if (Test-Path $currentBackup) {
+                Remove-Item $currentBackup -Force
+            }
+        }
+        else {
+            # Rename to next number
+            $nextBackup = "$LogFile.$($i + 1)"
+            if (Test-Path $currentBackup) {
+                Move-Item $currentBackup $nextBackup -Force
+            }
+        }
+    }
+    
+    # Rotate current log to .1
+    Move-Item $LogFile "$LogFile.1" -Force
 }
 
 # ============================================================================
@@ -353,6 +400,10 @@ function Disconnect-WireGuardTunnel {
     try {
         $process = Start-Process -FilePath 'wireguard.exe' -ArgumentList "/uninstalltunnelservice $TunnelName" -Wait -PassThru -NoNewWindow
         
+        if ($process.ExitCode -ne 0) {
+            Write-Log "wireguard.exe returned exit code $($process.ExitCode) while disconnecting $TunnelName" -Level WARN
+        }
+        
         # Wait for service to fully stop
         $serviceName = "WireGuardTunnel`$$TunnelName"
         $timeout = 30
@@ -399,6 +450,10 @@ function Connect-WireGuardTunnel {
     
     try {
         $process = Start-Process -FilePath 'wireguard.exe' -ArgumentList "/installtunnelservice `"$configFile`"" -Wait -PassThru -NoNewWindow
+        
+        if ($process.ExitCode -ne 0) {
+            Write-Log "wireguard.exe returned exit code $($process.ExitCode) while connecting $TunnelName" -Level WARN
+        }
         
         # Wait for service to start
         $serviceName = "WireGuardTunnel`$$TunnelName"
@@ -766,6 +821,7 @@ function Invoke-Main {
 
 # Run main
 try {
+    Invoke-LogRotation
     Invoke-Main
 }
 catch {
