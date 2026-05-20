@@ -770,6 +770,68 @@ function Send-PushoverNotification {
     }
 }
 
+function Write-OutageFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string[]]$TriedTunnels,
+
+        [Parameter(Mandatory)]
+        [bool]$IspUp
+    )
+
+    if (Test-Path $OutageFile) {
+        Write-Log "Outage file already exists, preserving original failure timestamp."
+        return
+    }
+
+    try {
+        @{
+            FailedAt     = (Get-Date).ToString('o')
+            TriedTunnels = $TriedTunnels
+            IspUp        = $IspUp
+        } | ConvertTo-Json | Set-Content $OutageFile -Encoding UTF8
+        Write-Log "Outage file created."
+    }
+    catch {
+        Write-Log "Failed to write outage file: $_" -Level WARN
+    }
+}
+
+function Get-OutageDowntime {
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-Path $OutageFile)) {
+        return $null
+    }
+
+    try {
+        $outage = Get-Content $OutageFile -Raw | ConvertFrom-Json
+        $failedAt = [datetime]::Parse($outage.FailedAt)
+        $duration = (Get-Date) - $failedAt
+
+        if ($duration.TotalMinutes -lt 60) {
+            $minutes = [math]::Max(1, [math]::Round($duration.TotalMinutes))
+            return "$minutes minutes"
+        }
+        elseif ($duration.TotalHours -lt 24) {
+            $hours = [math]::Floor($duration.TotalHours)
+            $minutes = [math]::Round($duration.TotalMinutes - ($hours * 60))
+            return "$hours hours $minutes minutes"
+        }
+        else {
+            $days = [math]::Floor($duration.TotalDays)
+            $hours = [math]::Round($duration.TotalHours - ($days * 24))
+            return "$days days $hours hours"
+        }
+    }
+    catch {
+        Write-Log "Failed to read outage file: $_" -Level WARN
+        return $null
+    }
+}
+
 # ============================================================================
 # Main Script Logic
 # ============================================================================
