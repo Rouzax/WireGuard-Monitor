@@ -897,6 +897,7 @@ function Invoke-Main {
     
     if (-not $ispConnected) {
         Write-Log "ISP is down. Reconnecting original tunnel and exiting. Services remain stopped." -Level WARN
+        Write-OutageFile -TriedTunnels @($originalTunnel) -IspUp $false
         Connect-WireGuardTunnel -TunnelName $originalTunnel | Out-Null
         Set-Cooldown
         return
