@@ -911,6 +911,11 @@ function Invoke-Main {
         
         if (Test-InternetConnectivity) {
             Write-Log "Original tunnel $originalTunnel reconnected and working." -Level SUCCESS
+            $downtime = Get-OutageDowntime
+            $msg = "Tunnel <b>$originalTunnel</b> reconnected. Services restarted."
+            if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
+            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.PushoverPriorityRecovery
+            Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
             Start-ManagedServices
             return
         }
