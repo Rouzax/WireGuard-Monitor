@@ -192,16 +192,16 @@ Unregister-ScheduledTask -TaskName "WireGuard-Monitor" -Confirm:$false
                   │ No
                   ▼
 ┌─────────────────────────────────────┐
-│   Ping 8.8.8.8 ──── Success ──────►│ Start any stopped services
-└─────────────────┬───────────────────┤ Notify: "WireGuard Recovered"
-                  │ Fail              │ (only if services were stopped)
-                  ▼                   │ Exit
+│   Ping 8.8.8.8 ──── Success ───────►│ Start any stopped services
+└─────────────────┬───────────────────┘ Notify: "WireGuard Recovered"
+                  │ Fail                (only if services were stopped)
+                  ▼                     Exit
 ┌─────────────────────────────────────┐
 │   Wait 10 seconds                   │
 └─────────────────┬───────────────────┘
                   ▼
 ┌─────────────────────────────────────┐
-│   Ping 1.1.1.1 ──── Success ──────►│ (same as above)
+│   Ping 1.1.1.1 ──── Success ───────►│ (same as above)
 └─────────────────┬───────────────────┘
                   │ Fail
                   ▼
