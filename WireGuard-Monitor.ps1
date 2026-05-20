@@ -727,6 +727,50 @@ function Start-ManagedServices {
 }
 
 # ============================================================================
+# Pushover Notification Functions
+# ============================================================================
+
+function Send-PushoverNotification {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Title,
+
+        [Parameter(Mandatory)]
+        [string]$Message,
+
+        [Parameter(Mandatory)]
+        [int]$Priority
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Config.PushoverUserKey) -or [string]::IsNullOrWhiteSpace($Config.PushoverApiToken)) {
+        return
+    }
+
+    $body = @{
+        token    = $Config.PushoverApiToken
+        user     = $Config.PushoverUserKey
+        title    = $Title
+        message  = $Message
+        html     = '1'
+        priority = $Priority
+        ttl      = $Config.PushoverTTL
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($Config.PushoverSound)) {
+        $body['sound'] = $Config.PushoverSound
+    }
+
+    try {
+        Invoke-RestMethod -Uri 'https://api.pushover.net/1/messages.json' -Method Post -Body $body | Out-Null
+        Write-Log "Pushover notification sent: $Title"
+    }
+    catch {
+        Write-Log "Failed to send Pushover notification: $_" -Level WARN
+    }
+}
+
+# ============================================================================
 # Main Script Logic
 # ============================================================================
 
