@@ -96,7 +96,7 @@ The script can send push notifications via [Pushover](https://pushover.net/) whe
 1. Create a Pushover account and install the app on your device
 2. Create an application in the [Pushover dashboard](https://pushover.net/apps/build) to get an API token
 3. Run `.\WireGuard-Monitor.ps1 -CreateConfig` to add the notification settings
-4. Set `PushoverUserKey` and `PushoverApiToken` in the config file
+4. Set `UserKey` and `ApiToken` under the `Pushover` section in the config file
 
 **When notifications are sent:**
 
@@ -110,16 +110,16 @@ Recovery notifications include downtime duration when available (tracked across 
 
 Failed-recovery notifications are sent during a brief window when the tunnel is disconnected and ISP is confirmed working. If ISP is also down, the failure is staged and reported in the recovery notification once connectivity returns.
 
-**Notification settings:**
+**Notification settings** (nested under `Pushover` key in config):
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `PushoverUserKey` | `""` | Your Pushover user key. Empty disables notifications. |
-| `PushoverApiToken` | `""` | Your Pushover application API token. Empty disables notifications. |
-| `PushoverPriorityRecovery` | `0` | Priority for recovery notifications (-2 lowest to 2 emergency). |
-| `PushoverPriorityFailure` | `1` | Priority for failure notifications. Default 1 (high) bypasses quiet hours. |
-| `PushoverSound` | `"pushover"` | Notification sound. Empty string uses device default. |
-| `PushoverTTL` | `3600` | Seconds before Pushover discards undelivered notifications. |
+| `Pushover.UserKey` | `""` | Your Pushover user key. Empty disables notifications. |
+| `Pushover.ApiToken` | `""` | Your Pushover application API token. Empty disables notifications. |
+| `Pushover.PriorityRecovery` | `0` | Priority for recovery notifications (-2 lowest to 2 emergency). |
+| `Pushover.PriorityFailure` | `1` | Priority for failure notifications. Default 1 (high) bypasses quiet hours. |
+| `Pushover.Sound` | `"pushover"` | Notification sound. Empty string uses device default. |
+| `Pushover.TTL` | `3600` | Seconds before Pushover discards undelivered notifications. |
 
 ## Usage
 

@@ -69,12 +69,14 @@ $DefaultConfig = @{
     LogBackupCount = 2
 
     # Pushover notification settings (leave keys empty to disable)
-    PushoverUserKey         = ''
-    PushoverApiToken        = ''
-    PushoverPriorityRecovery = 0
-    PushoverPriorityFailure  = 1
-    PushoverSound           = 'pushover'
-    PushoverTTL             = 3600
+    Pushover = @{
+        UserKey          = ''
+        ApiToken         = ''
+        PriorityRecovery = 0
+        PriorityFailure  = 1
+        Sound            = 'pushover'
+        TTL              = 3600
+    }
 }
 
 # ============================================================================
@@ -779,22 +781,22 @@ function Send-PushoverNotification {
         [int]$Priority
     )
 
-    if ([string]::IsNullOrWhiteSpace($Config.PushoverUserKey) -or [string]::IsNullOrWhiteSpace($Config.PushoverApiToken)) {
+    if ([string]::IsNullOrWhiteSpace($Config.Pushover.UserKey) -or [string]::IsNullOrWhiteSpace($Config.Pushover.ApiToken)) {
         return
     }
 
     $body = @{
-        token    = $Config.PushoverApiToken
-        user     = $Config.PushoverUserKey
+        token    = $Config.Pushover.ApiToken
+        user     = $Config.Pushover.UserKey
         title    = $Title
         message  = $Message
         html     = '1'
         priority = $Priority
-        ttl      = $Config.PushoverTTL
+        ttl      = $Config.Pushover.TTL
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($Config.PushoverSound)) {
-        $body['sound'] = $Config.PushoverSound
+    if (-not [string]::IsNullOrWhiteSpace($Config.Pushover.Sound)) {
+        $body['sound'] = $Config.Pushover.Sound
     }
 
     try {
@@ -894,7 +896,7 @@ function Invoke-Main {
             $downtime = Get-OutageDowntime
             $msg = "Services restarted on healthy check (tunnel <b>$activeTunnel</b>)."
             if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
-            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.PushoverPriorityRecovery
+            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.Pushover.PriorityRecovery
             Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
         }
         return
@@ -953,7 +955,7 @@ function Invoke-Main {
             $downtime = Get-OutageDowntime
             $msg = "Tunnel <b>$originalTunnel</b> reconnected. Services restarted."
             if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
-            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.PushoverPriorityRecovery
+            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.Pushover.PriorityRecovery
             Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
             Start-ManagedServices
             return
@@ -975,7 +977,7 @@ function Invoke-Main {
             $downtime = Get-OutageDowntime
             $msg = "Switched from <b>$originalTunnel</b> to <b>$nextTunnel</b>. Services restarted."
             if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
-            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.PushoverPriorityRecovery
+            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.Pushover.PriorityRecovery
             Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
             Start-ManagedServices
             return
@@ -984,14 +986,14 @@ function Invoke-Main {
         Write-Log "Fallback tunnel $nextTunnel also not working." -Level ERROR
         Write-OutageFile -TriedTunnels @($originalTunnel, $nextTunnel) -IspUp $true
         Disconnect-WireGuardTunnel -TunnelName $nextTunnel | Out-Null
-        Send-PushoverNotification -Title 'WireGuard Recovery Failed' -Message "Tried <b>$originalTunnel</b>, <b>$nextTunnel</b>. ISP OK but tunnels broken. Services <b>stopped</b>." -Priority $Config.PushoverPriorityFailure
+        Send-PushoverNotification -Title 'WireGuard Recovery Failed' -Message "Tried <b>$originalTunnel</b>, <b>$nextTunnel</b>. ISP OK but tunnels broken. Services <b>stopped</b>." -Priority $Config.Pushover.PriorityFailure
         Write-Log "Reconnecting $nextTunnel to maintain a tunnel connection." -Level INFO
         Connect-WireGuardTunnel -TunnelName $nextTunnel | Out-Null
     }
     else {
         Write-Log "Failed to connect fallback tunnel. Reconnecting original. Services remain stopped." -Level ERROR
         Write-OutageFile -TriedTunnels @($originalTunnel, $nextTunnel) -IspUp $true
-        Send-PushoverNotification -Title 'WireGuard Recovery Failed' -Message "Tried <b>$originalTunnel</b>, failed to connect <b>$nextTunnel</b>. ISP OK. Services <b>stopped</b>." -Priority $Config.PushoverPriorityFailure
+        Send-PushoverNotification -Title 'WireGuard Recovery Failed' -Message "Tried <b>$originalTunnel</b>, failed to connect <b>$nextTunnel</b>. ISP OK. Services <b>stopped</b>." -Priority $Config.Pushover.PriorityFailure
         Connect-WireGuardTunnel -TunnelName $originalTunnel | Out-Null
     }
     
