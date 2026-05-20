@@ -38,6 +38,7 @@ $ConfigFile = Join-Path $ScriptFolder 'WireGuard-Monitor.config.json'
 $LogFile = Join-Path $ScriptFolder 'WireGuard-Monitor.log'
 $CooldownFile = Join-Path $ScriptFolder 'WireGuard-Monitor.cooldown'
 $StoppedServicesFile = Join-Path $ScriptFolder 'WireGuard-Monitor.stopped-services.json'
+$OutageFile = Join-Path $ScriptFolder 'WireGuard-Monitor.outage.json'
 
 # ============================================================================
 # Default Configuration
@@ -65,6 +66,14 @@ $DefaultConfig = @{
     # Log rotation settings
     LogMaxSizeKB   = 512
     LogBackupCount = 2
+
+    # Pushover notification settings (leave keys empty to disable)
+    PushoverUserKey         = ''
+    PushoverApiToken        = ''
+    PushoverPriorityRecovery = 0
+    PushoverPriorityFailure  = 1
+    PushoverSound           = 'pushover'
+    PushoverTTL             = 3600
 }
 
 # ============================================================================
