@@ -192,16 +192,16 @@ Unregister-ScheduledTask -TaskName "WireGuard-Monitor" -Confirm:$false
                   │ No
                   ▼
 ┌─────────────────────────────────────┐
-│   Ping 8.8.8.8 ──── Success ───────►│ Start any stopped services, Exit
-└─────────────────┬───────────────────┘
-                  │ Fail
-                  ▼
+│   Ping 8.8.8.8 ──── Success ──────►│ Start any stopped services
+└─────────────────┬───────────────────┤ Notify: "WireGuard Recovered"
+                  │ Fail              │ (only if services were stopped)
+                  ▼                   │ Exit
 ┌─────────────────────────────────────┐
 │   Wait 10 seconds                   │
 └─────────────────┬───────────────────┘
                   ▼
 ┌─────────────────────────────────────┐
-│   Ping 1.1.1.1 ──── Success ───────►│ Start any stopped services, Exit
+│   Ping 1.1.1.1 ──── Success ──────►│ (same as above)
 └─────────────────┬───────────────────┘
                   │ Fail
                   ▼
@@ -221,27 +221,33 @@ Unregister-ScheduledTask -TaskName "WireGuard-Monitor" -Confirm:$false
                   ▼
 ┌─────────────────────────────────────┐
 │   Test ISP (ping without tunnel)    │
-│   ISP down? ──── Yes ──────────────►│ Reconnect tunnel, Exit
+│   ISP down? ──── Yes ──────────────►│ Save outage timestamp
+│                                     │ Reconnect tunnel, Exit
 │                                     │ (services remain stopped)
 └─────────────────┬───────────────────┘
                   │ ISP OK
                   ▼
 ┌─────────────────────────────────────┐
 │   Reconnect same tunnel             │
-│   Working? ──── Yes ───────────────►│ Start services, Exit
+│   Working? ──── Yes ───────────────►│ Notify: "WireGuard Recovered"
+│                                     │ Start services, Exit
 └─────────────────┬───────────────────┘
                   │ Still broken
                   ▼
 ┌─────────────────────────────────────┐
 │   Disconnect, try next tunnel       │
-│   Working? ──── Yes ───────────────►│ Start services, Exit
+│   Working? ──── Yes ───────────────►│ Notify: "WireGuard Recovered"
+│                                     │ Start services, Exit
 └─────────────────┬───────────────────┘
                   │ Still broken
                   ▼
 ┌─────────────────────────────────────┐
-│   Keep last tunnel connected        │
-│   Services remain stopped           │
-│   Log failure, Exit                 │
+│   Save outage timestamp             │
+│   Disconnect broken tunnel          │
+│   Notify: "Recovery Failed"         │
+│   (sent via bare ISP connection)    │
+│   Reconnect tunnel (keep connected) │
+│   Services remain stopped, Exit     │
 └─────────────────────────────────────┘
 ```
 
@@ -252,7 +258,7 @@ The script creates several files in the same directory:
 | File | Description |
 |------|-------------|
 | `WireGuard-Monitor.config.json` | Configuration file (user-editable) |
-| `WireGuard-Monitor.log` | Detailed log of all actions and connectivity checks |
+| `WireGuard-Monitor.log` | Log of actions when issues are detected (healthy runs produce no log output) |
 | `WireGuard-Monitor.log.1`, `.2` | Rotated backup log files |
 | `WireGuard-Monitor.cooldown` | Timestamp file to track cooldown period |
 | `WireGuard-Monitor.stopped-services.json` | Tracks which services were stopped (for recovery) |
@@ -282,6 +288,7 @@ The script creates several files in the same directory:
 [2024-01-15 14:30:24] [INFO] Testing connectivity to 8.8.8.8...
 [2024-01-15 14:30:25] [INFO] Primary ping successful.
 [2024-01-15 14:30:25] [SUCCESS] Original tunnel ams36 reconnected and working.
+[2024-01-15 14:30:25] [INFO] Pushover notification sent: WireGuard Recovered
 [2024-01-15 14:30:25] [INFO] Starting managed services...
 [2024-01-15 14:30:25] [INFO] Starting service: Radarr
 [2024-01-15 14:30:26] [SUCCESS] Service started: Radarr
@@ -289,6 +296,8 @@ The script creates several files in the same directory:
 [2024-01-15 14:30:27] [SUCCESS] Service started: qBittorrent
 [2024-01-15 14:30:27] [INFO] Cleaned up stopped services file.
 ```
+
+Note: The log file is only written when issues are detected. Healthy runs (connectivity OK, no services to restart) produce no log output. Use `-Verbose` to see output for all runs.
 
 ## Troubleshooting
 
@@ -316,5 +325,11 @@ The script creates several files in the same directory:
 - Check write permissions on the script directory
 
 **Log file not created**
+- This is normal for healthy runs; the log is only written when issues are detected
+- Run manually with `-Verbose` to see output for all runs
 - Check write permissions on the script directory
-- Run manually with `-Verbose` to see output
+
+**Pushover notifications not arriving**
+- Run `.\WireGuard-Monitor.ps1 -TestPushover` to verify credentials
+- Check that `UserKey` and `ApiToken` are set in the `Pushover` config section
+- Review the log file for "Failed to send Pushover notification" messages
