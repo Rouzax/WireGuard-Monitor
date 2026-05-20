@@ -57,7 +57,15 @@ Edit `WireGuard-Monitor.config.json`:
   "WireGuardConfigPath": "C:\\Program Files\\WireGuard\\Data\\Configurations",
   "ServicesToManage": ["qBittorrent", "NZBGet", "Prowlarr", "Radarr", "Medusa"],
   "LogMaxSizeKB": 512,
-  "LogBackupCount": 2
+  "LogBackupCount": 2,
+  "Pushover": {
+    "UserKey": "",
+    "ApiToken": "",
+    "PriorityRecovery": 0,
+    "PriorityFailure": 1,
+    "Sound": "pushover",
+    "TTL": 3600
+  }
 }
 ```
 
@@ -73,6 +81,7 @@ Edit `WireGuard-Monitor.config.json`:
 | `ServicesToManage` | Array of Windows service names to stop when VPN is down and start when restored. Set to empty array `[]` to disable service management. |
 | `LogMaxSizeKB` | Maximum log file size in KB before rotation. |
 | `LogBackupCount` | Number of backup log files to keep (e.g., `.log.1`, `.log.2`). |
+| `Pushover` | Pushover notification settings (see [Notifications](#notifications-pushover) section below). |
 
 ### Service Management
 
