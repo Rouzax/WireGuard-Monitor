@@ -12,7 +12,8 @@ A PowerShell script that monitors WireGuard tunnel connectivity on Windows and a
 - External JSON configuration file (preserved across script updates)
 - Cooldown mechanism to prevent rapid reconnection loops
 - Automatic log rotation with configurable size and backup count
-- Detailed logging for troubleshooting
+- Quiet logging (only writes to log file when issues are detected)
+- Pushover push notifications for recovery and failure events
 - Always maintains an active tunnel connection
 
 ## Requirements

@@ -12,13 +12,14 @@
     5. Restart services if VPN is working
     
     Designed to run as a scheduled task every 15 minutes.
+    Only logs to file when issues are detected.
 
 .PARAMETER CreateConfig
     Creates or updates the config file with default values, preserving existing settings.
 
 .NOTES
-    Author: Martijn
-    Version: 2.0
+    Author: Rouzax
+    Version: 2.1
     Requires: Administrator privileges (for WireGuard and service management)
 #>
 
@@ -169,31 +170,66 @@ else {
 # Logging Functions
 # ============================================================================
 
+$script:LogBuffer = [System.Collections.ArrayList]::new()
+$script:HasIssues = $false
+
 function Write-Log {
     <#
     .SYNOPSIS
-        Writes a timestamped message to the log file and verbose output.
+        Buffers a timestamped message. Only written to file if issues occur.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$Message,
-        
+
         [ValidateSet('INFO', 'WARN', 'ERROR', 'SUCCESS')]
         [string]$Level = 'INFO'
     )
-    
+
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $logEntry = "[$timestamp] [$Level] $Message"
-    
-    Add-Content -Path $LogFile -Value $logEntry -Encoding UTF8
-    
+
+    [void]$script:LogBuffer.Add($logEntry)
+
+    if ($Level -in @('WARN', 'ERROR')) {
+        $script:HasIssues = $true
+    }
+
     switch ($Level) {
         'ERROR'   { Write-Verbose $logEntry -Verbose }
         'WARN'    { Write-Verbose $logEntry -Verbose }
         'SUCCESS' { Write-Verbose $logEntry -Verbose }
         default   { Write-Verbose $logEntry }
     }
+}
+
+function Write-LogBuffer {
+    <#
+    .SYNOPSIS
+        Writes buffered log entries to file if issues occurred.
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not $script:HasIssues -or $script:LogBuffer.Count -eq 0) {
+        return
+    }
+
+    foreach ($entry in $script:LogBuffer) {
+        Add-Content -Path $LogFile -Value $entry -Encoding UTF8
+    }
+}
+
+function Set-IssueFlag {
+    <#
+    .SYNOPSIS
+        Manually sets the issue flag (for actions that should trigger logging).
+    #>
+    [CmdletBinding()]
+    param()
+
+    $script:HasIssues = $true
 }
 
 function Invoke-LogRotation {
@@ -837,23 +873,23 @@ function Get-OutageDowntime {
 # ============================================================================
 
 function Invoke-Main {
+    Write-Host "WireGuard Monitor - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
     Write-Log "========== WireGuard Monitor Started =========="
-    
+
     # Step 1: Check cooldown
     if (Test-CooldownActive) {
         Write-Log "Exiting due to active cooldown."
         return
     }
-    
+
     # Step 2: Initial connectivity check
     if (Test-InternetConnectivity) {
         Write-Log "Internet connectivity OK. No action needed."
 
         # Start any services that might still be stopped from previous failure
-        $hadStoppedServices = Test-Path $StoppedServicesFile
-        Start-ManagedServices
-
-        if ($hadStoppedServices) {
+        if (Test-Path $StoppedServicesFile) {
+            Set-IssueFlag
+            Start-ManagedServices
             $activeTunnel = Get-ActiveWireGuardTunnel
             $downtime = Get-OutageDowntime
             $msg = "Services restarted on healthy check (tunnel <b>$activeTunnel</b>)."
@@ -863,8 +899,11 @@ function Invoke-Main {
         }
         return
     }
-    
-    # Step 3: Connection is broken - detect active tunnel
+
+    # Connection is broken - mark as issue (we're taking action)
+    Set-IssueFlag
+
+    # Step 3: Detect active tunnel
     $activeTunnel = Get-ActiveWireGuardTunnel
     
     if (-not $activeTunnel) {
@@ -969,4 +1008,14 @@ try {
 catch {
     Write-Log "Unhandled exception: $_" -Level ERROR
     throw
+}
+finally {
+    Write-LogBuffer
+
+    if ($script:HasIssues) {
+        Write-Host "Completed with issues - see log file for details" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "Completed - no issues detected" -ForegroundColor Green
+    }
 }
