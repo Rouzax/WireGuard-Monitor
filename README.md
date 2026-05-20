@@ -87,6 +87,39 @@ Service dependencies are automatically respected:
 
 The script works with any Windows service, including FireDaemon-managed services.
 
+### Notifications (Pushover)
+
+The script can send push notifications via [Pushover](https://pushover.net/) when tunnel recovery succeeds or fails. Notifications are disabled by default.
+
+**Setup:**
+1. Create a Pushover account and install the app on your device
+2. Create an application in the [Pushover dashboard](https://pushover.net/apps/build) to get an API token
+3. Run `.\WireGuard-Monitor.ps1 -CreateConfig` to add the notification settings
+4. Set `PushoverUserKey` and `PushoverApiToken` in the config file
+
+**When notifications are sent:**
+
+| Event | Title | When |
+|-------|-------|------|
+| Tunnel recovered | WireGuard Recovered | Tunnel reconnected (same or fallback) and connectivity confirmed |
+| Recovery failed | WireGuard Recovery Failed | ISP works but all tunnels broken; sent before reconnecting broken tunnel |
+| Passive recovery | WireGuard Recovered | Healthy run restarts services left stopped from a previous failure |
+
+Recovery notifications include downtime duration when available (tracked across runs via an outage state file).
+
+Failed-recovery notifications are sent during a brief window when the tunnel is disconnected and ISP is confirmed working. If ISP is also down, the failure is staged and reported in the recovery notification once connectivity returns.
+
+**Notification settings:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `PushoverUserKey` | `""` | Your Pushover user key. Empty disables notifications. |
+| `PushoverApiToken` | `""` | Your Pushover application API token. Empty disables notifications. |
+| `PushoverPriorityRecovery` | `0` | Priority for recovery notifications (-2 lowest to 2 emergency). |
+| `PushoverPriorityFailure` | `1` | Priority for failure notifications. Default 1 (high) bypasses quiet hours. |
+| `PushoverSound` | `"pushover"` | Notification sound. Empty string uses device default. |
+| `PushoverTTL` | `3600` | Seconds before Pushover discards undelivered notifications. |
+
 ## Usage
 
 ### Manual Execution
@@ -207,6 +240,7 @@ The script creates several files in the same directory:
 | `WireGuard-Monitor.log.1`, `.2` | Rotated backup log files |
 | `WireGuard-Monitor.cooldown` | Timestamp file to track cooldown period |
 | `WireGuard-Monitor.stopped-services.json` | Tracks which services were stopped (for recovery) |
+| `WireGuard-Monitor.outage.json` | Tracks when an outage started (for downtime duration in notifications) |
 
 ### Sample Log Output
 
