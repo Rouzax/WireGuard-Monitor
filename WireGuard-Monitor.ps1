@@ -848,9 +848,19 @@ function Invoke-Main {
     # Step 2: Initial connectivity check
     if (Test-InternetConnectivity) {
         Write-Log "Internet connectivity OK. No action needed."
-        
+
         # Start any services that might still be stopped from previous failure
+        $hadStoppedServices = Test-Path $StoppedServicesFile
         Start-ManagedServices
+
+        if ($hadStoppedServices) {
+            $activeTunnel = Get-ActiveWireGuardTunnel
+            $downtime = Get-OutageDowntime
+            $msg = "Services restarted on healthy check (tunnel <b>$activeTunnel</b>)."
+            if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
+            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.PushoverPriorityRecovery
+            Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
+        }
         return
     }
     
