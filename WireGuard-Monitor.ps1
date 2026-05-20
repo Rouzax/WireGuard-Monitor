@@ -316,9 +316,9 @@ function Test-CooldownActive {
     }
     catch {
         Write-Log "Failed to read cooldown file: $_" -Level WARN
-        Remove-Item $CooldownFile -Force -ErrorAction SilentlyContinue
     }
-    
+
+    Remove-Item $CooldownFile -Force -ErrorAction SilentlyContinue
     return $false
 }
 
