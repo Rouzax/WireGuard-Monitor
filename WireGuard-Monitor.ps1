@@ -17,6 +17,9 @@
 .PARAMETER CreateConfig
     Creates or updates the config file with default values, preserving existing settings.
 
+.PARAMETER TestPushover
+    Sends a test notification via Pushover to verify credentials are working.
+
 .NOTES
     Author: Rouzax
     Version: 2.1
@@ -27,7 +30,8 @@
 
 [CmdletBinding()]
 param(
-    [switch]$CreateConfig
+    [switch]$CreateConfig,
+    [switch]$TestPushover
 )
 
 # ============================================================================
@@ -1007,6 +1011,19 @@ function Invoke-Main {
     # Only set cooldown on failure - prevents rapid retries when things are broken
     Set-Cooldown
     Write-Log "========== WireGuard Monitor Finished (with issues) ==========" -Level WARN
+}
+
+# Handle -TestPushover parameter
+if ($TestPushover) {
+    if ([string]::IsNullOrWhiteSpace($Config.Pushover.UserKey) -or [string]::IsNullOrWhiteSpace($Config.Pushover.ApiToken)) {
+        Write-Host "Pushover credentials not configured. Set UserKey and ApiToken in:" -ForegroundColor Red
+        Write-Host "  $ConfigFile" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Sending test notification..." -ForegroundColor Cyan
+    Send-PushoverNotification -Title 'WireGuard Monitor Test' -Message 'Test notification from WireGuard Monitor. If you see this, Pushover is configured correctly.' -Priority $Config.Pushover.PriorityRecovery
+    Write-Host "Test notification sent. Check your Pushover app." -ForegroundColor Green
+    exit 0
 }
 
 # Run main

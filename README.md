@@ -143,6 +143,12 @@ To create/update the configuration file:
 .\WireGuard-Monitor.ps1 -CreateConfig
 ```
 
+To test Pushover notifications:
+
+```powershell
+.\WireGuard-Monitor.ps1 -TestPushover
+```
+
 ### Scheduled Task Setup
 
 Run the following in an elevated PowerShell prompt to create a scheduled task that runs every 15 minutes:
