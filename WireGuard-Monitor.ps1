@@ -930,18 +930,29 @@ function Invoke-Main {
     
     if (Connect-WireGuardTunnel -TunnelName $nextTunnel) {
         Start-Sleep -Seconds 2
-        
+
         if (Test-InternetConnectivity) {
             Write-Log "Fallback tunnel $nextTunnel connected and working." -Level SUCCESS
+            $downtime = Get-OutageDowntime
+            $msg = "Switched from <b>$originalTunnel</b> to <b>$nextTunnel</b>. Services restarted."
+            if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
+            Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.PushoverPriorityRecovery
+            Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
             Start-ManagedServices
             return
         }
-        
-        Write-Log "Fallback tunnel $nextTunnel also not working. Keeping it connected. Services remain stopped." -Level ERROR
+
+        Write-Log "Fallback tunnel $nextTunnel also not working." -Level ERROR
+        Write-OutageFile -TriedTunnels @($originalTunnel, $nextTunnel) -IspUp $true
+        Disconnect-WireGuardTunnel -TunnelName $nextTunnel | Out-Null
+        Send-PushoverNotification -Title 'WireGuard Recovery Failed' -Message "Tried <b>$originalTunnel</b>, <b>$nextTunnel</b>. ISP OK but tunnels broken. Services <b>stopped</b>." -Priority $Config.PushoverPriorityFailure
+        Write-Log "Reconnecting $nextTunnel to maintain a tunnel connection." -Level INFO
+        Connect-WireGuardTunnel -TunnelName $nextTunnel | Out-Null
     }
     else {
-        # Last resort: try to connect something
         Write-Log "Failed to connect fallback tunnel. Reconnecting original. Services remain stopped." -Level ERROR
+        Write-OutageFile -TriedTunnels @($originalTunnel, $nextTunnel) -IspUp $true
+        Send-PushoverNotification -Title 'WireGuard Recovery Failed' -Message "Tried <b>$originalTunnel</b>, failed to connect <b>$nextTunnel</b>. ISP OK. Services <b>stopped</b>." -Priority $Config.PushoverPriorityFailure
         Connect-WireGuardTunnel -TunnelName $originalTunnel | Out-Null
     }
     
