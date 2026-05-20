@@ -908,8 +908,8 @@ function Invoke-Main {
             $msg = "Services restarted on healthy check (tunnel <b>$activeTunnel</b>)."
             if ($downtime) { $msg += " Downtime: <b>$downtime</b>." }
             Send-PushoverNotification -Title 'WireGuard Recovered' -Message $msg -Priority $Config.Pushover.PriorityRecovery
-            Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
         }
+        Remove-Item $OutageFile -Force -ErrorAction SilentlyContinue
         return
     }
 
