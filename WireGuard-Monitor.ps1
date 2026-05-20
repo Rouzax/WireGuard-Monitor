@@ -102,9 +102,16 @@ function Get-MergedConfig {
     if (Test-Path $ConfigFile) {
         try {
             $existingConfig = Get-Content $ConfigFile -Raw | ConvertFrom-Json
-            
+
             foreach ($property in $existingConfig.PSObject.Properties) {
-                $config[$property.Name] = $property.Value
+                if ($config.ContainsKey($property.Name) -and $config[$property.Name] -is [hashtable] -and $property.Value -is [PSCustomObject]) {
+                    foreach ($subProperty in $property.Value.PSObject.Properties) {
+                        $config[$property.Name][$subProperty.Name] = $subProperty.Value
+                    }
+                }
+                else {
+                    $config[$property.Name] = $property.Value
+                }
             }
         }
         catch {
