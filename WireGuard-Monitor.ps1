@@ -79,7 +79,7 @@ $DefaultConfig = @{
         PriorityRecovery = 0
         PriorityFailure  = 1
         Sound            = 'pushover'
-        TTL              = 3600
+        TTL              = 86400
     }
 }
 
@@ -803,7 +803,11 @@ function Send-PushoverNotification {
         message  = $Message
         html     = '1'
         priority = $Priority
-        ttl      = $Config.Pushover.TTL
+    }
+
+    # Pushover requires a positive ttl; omit it entirely to disable expiry (TTL of 0 or null).
+    if ($Config.Pushover.TTL -gt 0) {
+        $body['ttl'] = $Config.Pushover.TTL
     }
 
     if (-not [string]::IsNullOrWhiteSpace($Config.Pushover.Sound)) {

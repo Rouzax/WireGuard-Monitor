@@ -64,7 +64,7 @@ Edit `WireGuard-Monitor.config.json`:
     "PriorityRecovery": 0,
     "PriorityFailure": 1,
     "Sound": "pushover",
-    "TTL": 3600
+    "TTL": 86400
   }
 }
 ```
@@ -128,7 +128,7 @@ Failed-recovery notifications are sent during a brief window when the tunnel is 
 | `Pushover.PriorityRecovery` | `0` | Priority for recovery notifications (-2 lowest to 2 emergency). |
 | `Pushover.PriorityFailure` | `1` | Priority for failure notifications. Default 1 (high) bypasses quiet hours. |
 | `Pushover.Sound` | `"pushover"` | Notification sound. Empty string uses device default. |
-| `Pushover.TTL` | `3600` | Seconds before Pushover discards undelivered notifications. |
+| `Pushover.TTL` | `86400` | Seconds after delivery before Pushover auto-deletes the notification from devices (default 24 hours). Set to `0` or `null` to disable expiry (notifications never auto-delete). |
 
 ## Usage
 
