@@ -22,7 +22,7 @@
 
 .NOTES
     Author: Rouzax
-    Version: 2.1
+    Version: 2.2
     Requires: Administrator privileges (for WireGuard and service management)
 #>
 
